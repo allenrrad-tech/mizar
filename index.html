@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mizar">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<title>Mizar – Unit Converter</title>
+<style>
+/* ── TOKENS ─────────────────────────────────────────── */
+:root {
+  --bg:     #1C1C1E;
+  --card:   #2C2C2E;
+  --card2:  #3A3A3C;
+  --accent: #007AFF;
+  --text:   #FFFFFF;
+  --sub:    #8E8E93;
+  --div:    #3A3A3C;
+  --nav:    #1C1C1E;
+  --shadow: rgba(0,0,0,0.4);
+  /* Safe areas */
+  --sat: env(safe-area-inset-top,    44px);
+  --sab: env(safe-area-inset-bottom, 34px);
+  --sal: env(safe-area-inset-left,   0px);
+  --sar: env(safe-area-inset-right,  0px);
+}
+[data-theme="light"] {
+  --bg:     #F2F2F7;
+  --card:   #FFFFFF;
+  --card2:  #F2F2F7;
+  --accent: #007AFF;
+  --text:   #000000;
+  --sub:    #6C6C70;
+  --div:    #E5E5EA;
+  --nav:    #F2F2F7;
+  --shadow: rgba(0,0,0,0.08);
+}
+
+/* ── RESET ───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+.app {
+  width: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* ── APPBAR ──────────────────────────────────────────── */
+.appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--sat) + 10px) calc(4px + var(--sar)) 8px calc(4px + var(--sal));
+  background: var(--bg);
+  flex-shrink: 0;
+  z-index: 20;
+}
+.appbar-title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+.appbar-side { display: flex; align-items: center; min-width: 100px; }
+.appbar-side.right { justify-content: flex-end; }
+.icon-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--sub); padding: 10px 8px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px;
+  transition: color 0.15s;
+}
+.icon-btn:active { opacity: 0.5; }
+.icon-btn.starred { color: #FFD60A; }
+.icon-btn svg { width: 22px; height: 22px; }
+
+/* ── SCREENS ─────────────────────────────────────────── */
+.screen {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: calc(70px + var(--sab));
+}
+.screen.active { display: block; }
+
+/* ── CATEGORY CARDS ──────────────────────────────────── */
+.cat-wrap { padding: 0 12px 0; }
+.cat-row {
+  display: flex;
+  gap: 9px;
+  overflow-x: auto;
+  padding: 4px 0 14px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.cat-row::-webkit-scrollbar { display: none; }
+.cat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 13px 11px 10px;
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--sub);
+  cursor: pointer;
+  border: none;
+  flex-shrink: 0;
+  min-width: 72px;
+  min-height: 72px;
+  transition: background 0.18s, color 0.18s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.cat-card.active { background: var(--accent); color: #fff; }
+.cat-card:active { opacity: 0.7; transform: scale(0.95); }
+.cat-card svg { width: 24px; height: 24px; }
+.cat-card span { font-size: 11px; font-weight: 500; }
+
+/* ── FAVORITES BAR ───────────────────────────────────── */
+.fav-bar { padding: 0 16px 12px; display: none; }
+.fav-bar.has-items { display: block; }
+.fav-bar-label {
+  font-size: 12px; font-weight: 600;
+  color: var(--sub); letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 9px;
+  display: flex; align-items: center; gap: 5px;
+}
+.fav-bar-label svg { width: 13px; height: 13px; color: #FFD60A; }
+.fav-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.fav-chips::-webkit-scrollbar { display: none; }
+.fav-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 14px;
+  border-radius: 22px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer; border: none;
+  font-size: 13px; font-weight: 500;
+  white-space: nowrap; flex-shrink: 0;
+  min-height: 44px;
+  -webkit-user-select: none;
+}
+.fav-chip:active { background: var(--card2); }
+.fav-chip-icon { color: var(--accent); display: flex; }
+.fav-chip-icon svg { width: 13px; height: 13px; }
+.fav-chip-del {
+  display: none; width: 18px; height: 18px;
+  border-radius: 50%; background: var(--sub);
+  color: var(--nav); font-size: 11px;
+  align-items: center; justify-content: center;
+  cursor: pointer; margin-left: 2px;
+}
+.fav-bar.edit-mode .fav-chip-del { display: flex; }
+.fav-bar-edit { background: none; border: none; cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 500; padding: 0; margin-left: auto; min-height: 44px; }
+
+/* ── CONVERTER BODY ──────────────────────────────────── */
+.conv-body { padding: 0 16px; }
+
+/* ── FROM / TO CARDS ─────────────────────────────────── */
+.conv-card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 16px 16px 12px;
+}
+.conv-lbl { font-size: 13px; color: var(--sub); margin-bottom: 8px; }
+.conv-row { display: flex; align-items: center; gap: 10px; }
+.conv-number-input {
+  flex: 1; min-width: 0;
+  background: none; border: none; outline: none;
+  font-size: 44px; font-weight: 300;
+  color: var(--text);
+  line-height: 1; padding: 0; width: 100%;
+  /* 16px floor prevents iOS auto-zoom */
+  font-size: max(44px, 16px);
+}
+.conv-number-input::placeholder { color: var(--sub); }
+.conv-result-val {
+  flex: 1; min-width: 0;
+  font-size: 44px; font-weight: 300;
+  color: var(--accent); line-height: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.unit-btn {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--card2); border: none; border-radius: 12px;
+  padding: 10px 13px;
+  color: var(--text); font-size: 15px; font-weight: 500;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  min-height: 44px;
+  -webkit-user-select: none;
+}
+.unit-btn:active { filter: brightness(0.82); }
+.unit-btn svg { width: 17px; height: 17px; color: var(--sub); }
+.conv-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 8px; min-height: 22px;
+}
+.conv-unit-name { font-size: 13px; color: var(--sub); }
+.base-badge {
+  font-size: 11px; font-weight: 500; color: var(--accent);
+  background: rgba(0,122,255,0.13); padding: 2px 9px; border-radius: 6px;
+}
+.copy-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--sub); display: flex; align-items: center;
+  padding: 4px 6px; border-radius: 6px; min-height: 36px; min-width: 36px;
+}
+.copy-btn:active { color: var(--text); }
+.copy-btn svg { width: 17px; height: 17px; }
+
+/* ── SWAP ────────────────────────────────────────────── */
+.swap-row { display: flex; justify-content: flex-end; padding: 10px 0; }
+.swap-btn {
+  width: 48px; height: 48px;
+  border-radius: 50%; background: var(--accent); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 18px rgba(0,122,255,0.45);
+  transition: transform 0.35s cubic-bezier(.4,2,.6,1);
+  -webkit-user-select: none;
+}
+.swap-btn:active { transform: scale(0.9) rotate(180deg) !important; }
+.swap-btn.spinning { transform: rotate(180deg); }
+.swap-btn svg { width: 22px; height: 22px; color: #fff; }
+
+/* ── CONVERT BUTTON ──────────────────────────────────── */
+.convert-btn {
+  width: 100%; height: 56px;
+  border-radius: 16px; background: var(--accent); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: #fff; font-size: 17px; font-weight: 600;
+  margin: 14px 0 0;
+  box-shadow: 0 4px 18px rgba(0,122,255,0.35);
+  -webkit-user-select: none;
+}
+.convert-btn:active { opacity: 0.8; transform: scale(0.98); }
+.convert-btn svg { width: 20px; height: 20px; }
+
+/* ── INFO CARD ───────────────────────────────────────── */
+.info-card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border-radius: 16px;
+  padding: 14px 16px; margin-top: 12px;
+}
+.info-icon {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: rgba(0,122,255,0.13);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.info-icon svg { width: 20px; height: 20px; color: var(--accent); }
+.info-ratio { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.info-sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+/* ── UNIT PICKER SHEET ───────────────────────────────── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55); z-index: 100;
+  align-items: flex-end; justify-content: center;
+}
+.overlay.open { display: flex; }
+.sheet {
+  background: var(--bg); border-radius: 20px 20px 0 0;
+  width: 100%; max-height: 75dvh;
+  display: flex; flex-direction: column;
+  animation: slideUp .22s ease-out;
+  padding-bottom: var(--sab);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-handle {
+  width: 38px; height: 4px; border-radius: 2px;
+  background: var(--sub); opacity: 0.35;
+  margin: 10px auto 12px;
+}
+.sheet-header { padding: 0 16px 10px; font-size: 17px; font-weight: 600; }
+.sheet-search {
+  margin: 0 16px 8px; background: var(--card2);
+  border-radius: 11px; display: flex; align-items: center; padding: 0 12px; gap: 8px;
+}
+.sheet-search svg { color: var(--sub); width: 17px; height: 17px; flex-shrink: 0; }
+.sheet-search input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-size: 16px; padding: 13px 0;
+  -webkit-appearance: none;
+}
+.sheet-search input::placeholder { color: var(--sub); }
+.sheet-list { overflow-y: auto; flex: 1; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+.sheet-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 16px; cursor: pointer;
+  border-bottom: 1px solid var(--div); min-height: 52px;
+}
+.sheet-item:last-child { border-bottom: none; }
+.sheet-item:active { background: var(--card); }
+.sheet-item.sel { color: var(--accent); font-weight: 600; }
+.sheet-badge {
+  background: var(--card); border-radius: 6px; padding: 3px 9px;
+  font-size: 13px; color: var(--sub);
+  display: flex; align-items: center; gap: 6px;
+}
+.sheet-item.sel .sheet-badge { background: rgba(0,122,255,.1); color: var(--accent); }
+.sheet-check { width: 17px; height: 17px; color: var(--accent); }
+
+/* ── BOTTOM NAV ──────────────────────────────────────── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--nav);
+  border-top: 1px solid var(--div);
+  display: flex; z-index: 50;
+  padding-bottom: var(--sab);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+}
+.nav-btn {
+  flex: 1; display: flex;
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 8px 4px 6px;
+  cursor: pointer; border: none; background: none;
+  color: var(--sub); font-size: 10px; font-weight: 500;
+  min-height: 52px;
+  -webkit-user-select: none;
+}
+.nav-btn.active { color: var(--accent); }
+.nav-btn:active { opacity: 0.5; }
+.nav-btn svg { width: 24px; height: 24px; }
+
+/* ── HISTORY / FAVORITES LISTS ───────────────────────── */
+.list-wrap { padding: 8px 16px 8px; display: flex; flex-direction: column; gap: 10px; }
+.list-card {
+  background: var(--card); border-radius: 16px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+  cursor: pointer; min-height: 68px;
+}
+.list-card:active { filter: brightness(0.92); }
+.list-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.list-avatar svg { width: 20px; height: 20px; }
+.list-meta { flex: 1; min-width: 0; }
+.list-title { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-sub { font-size: 12px; color: var(--sub); margin-top: 3px; }
+.chevron svg { width: 18px; height: 18px; color: var(--sub); }
+
+/* ── COLLECTIONS ─────────────────────────────────────── */
+.coll-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; padding: 8px 16px 8px;
+}
+.coll-card {
+  background: var(--card); border-radius: 18px;
+  padding: 18px 14px 14px;
+  cursor: pointer; display: flex; flex-direction: column; gap: 10px;
+  min-height: 148px;
+}
+.coll-card:active { opacity: 0.75; transform: scale(0.97); }
+.coll-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.coll-icon svg { width: 24px; height: 24px; }
+.coll-card h3 { font-size: 15px; font-weight: 600; margin-top: auto; }
+.coll-card p { font-size: 12px; color: var(--sub); }
+.coll-pair {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; cursor: pointer;
+  border-bottom: 1px solid var(--div); min-height: 54px;
+}
+.coll-pair:last-child { border-bottom: none; }
+.coll-pair:active { background: var(--card); }
+.coll-pair-left { display: flex; align-items: center; gap: 10px; }
+.coll-pair-text { font-size: 14px; font-weight: 500; }
+.coll-pair-sub { font-size: 12px; color: var(--sub); margin-top: 1px; }
+.coll-go { color: var(--accent); }
+.coll-go svg { width: 16px; height: 16px; }
+
+/* ── SETTINGS ────────────────────────────────────────── */
+.settings-wrap { padding: 0 16px 24px; }
+.s-label {
+  font-size: 12px; font-weight: 600; color: var(--sub);
+  letter-spacing: .8px; text-transform: uppercase;
+  padding: 20px 4px 8px;
+}
+.s-group { background: var(--card); border-radius: 16px; overflow: hidden; }
+.s-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--div); min-height: 52px;
+}
+.s-row:last-child { border-bottom: none; }
+.s-row-left h4 { font-size: 16px; color: var(--text); font-weight: 400; }
+.s-row-left p { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.toggle {
+  width: 51px; height: 31px; border-radius: 16px;
+  background: var(--card2); border: none; cursor: pointer;
+  position: relative; flex-shrink: 0; transition: background 0.25s;
+}
+.toggle.on { background: #34C759; }
+.toggle::after {
+  content: ''; position: absolute;
+  width: 27px; height: 27px; border-radius: 50%;
+  background: #fff; top: 2px; left: 2px;
+  transition: left 0.25s; box-shadow: 0 1px 5px rgba(0,0,0,.3);
+}
+.toggle.on::after { left: 22px; }
+.s-val { font-size: 14px; color: var(--sub); }
+.s-select {
+  background: transparent; border: none;
+  color: var(--accent); font-size: 16px;
+  font-weight: 500; outline: none; cursor: pointer;
+  min-height: 44px;
+}
+.s-ver { font-size: 13px; color: var(--sub); }
+
+/* ── EMPTY STATE ─────────────────────────────────────── */
+.empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 32px; gap: 14px; text-align: center;
+}
+.empty svg { color: var(--sub); width: 56px; height: 56px; opacity: .4; }
+.empty h3 { font-size: 18px; font-weight: 500; }
+.empty p { font-size: 14px; color: var(--sub); line-height: 1.5; }
+
+/* ── TOAST ───────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: calc(76px + var(--sab));
+  left: 50%; transform: translateX(-50%);
+  background: rgba(30,30,32,0.94); color: #fff;
+  padding: 11px 22px; border-radius: 22px; font-size: 14px;
+  z-index: 999; opacity: 0;
+  transition: opacity .2s, transform .2s;
+  pointer-events: none; white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,.35);
+  transform: translateX(-50%) translateY(6px);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── SCREEN HEADER ───────────────────────────────────── */
+.screen-hdr {
+  display: flex; align-items: center;
+  justify-content: space-between; padding: 16px 16px 8px;
+}
+.screen-hdr h2 { font-size: 22px; font-weight: 700; }
+.hdr-action {
+  background: none; border: none; color: var(--accent);
+  font-size: 15px; font-weight: 500; cursor: pointer;
+  padding: 4px 8px; min-height: 44px;
+}
+
+/* ── HELP OVERLAY ────────────────────────────────────── */
+#helpOverlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); z-index: 9999;
+  align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+#helpOverlay.open { display: flex; }
+.help-sheet {
+  background: var(--bg); border-radius: 22px 22px 0 0;
+  width: 100%; max-height: 90dvh;
+  display: flex; flex-direction: column;
+  padding-bottom: var(--sab);
+  animation: slideUp .25s cubic-bezier(.34,1.2,.64,1);
+}
+.help-hdr {
+  display: flex; align-items: center;
+  padding: 16px 16px 14px; gap: 12px; flex-shrink: 0;
+}
+.help-hdr-icon {
+  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,122,255,0.14);
+}
+.help-hdr-icon svg { width: 22px; height: 22px; color: var(--accent); }
+.help-hdr-text { flex: 1; }
+.help-hdr-text h2 { font-size: 18px; font-weight: 700; }
+.help-hdr-text p { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.help-close {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--card2); border: none; cursor: pointer;
+  color: var(--sub); display: flex; align-items: center; justify-content: center;
+}
+.help-close:active { opacity: 0.6; }
+.help-close svg { width: 16px; height: 16px; }
+.help-divider { height: 1px; background: var(--div); margin: 0 16px; flex-shrink: 0; }
+.help-body { overflow-y: auto; flex: 1; padding: 4px 16px 16px; -webkit-overflow-scrolling: touch; }
+.help-sec { font-size: 11px; font-weight: 600; color: var(--sub); letter-spacing: 0.5px; text-transform: uppercase; padding: 14px 2px 7px; }
+.help-item { display: flex; align-items: flex-start; gap: 12px; background: var(--card); border-radius: 14px; padding: 13px; margin-bottom: 9px; }
+.hi-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.hi-icon svg { width: 19px; height: 19px; }
+.hi-txt h4 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.hi-txt p { font-size: 13px; color: var(--sub); line-height: 1.5; }
+.hi-txt strong { color: var(--text); font-weight: 500; }
+.help-cats { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 0 6px; }
+.help-cat { display: flex; align-items: center; gap: 7px; background: var(--card); border-radius: 10px; padding: 8px 12px; }
+.help-cat svg { width: 15px; height: 15px; color: var(--accent); flex-shrink: 0; }
+.help-cat-names { display: flex; flex-direction: column; }
+.help-cat-fa { font-size: 13px; font-weight: 500; }
+.help-cat-en { font-size: 11px; color: var(--sub); }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+<!-- ── APPBAR ─────────────────────────────────────────── -->
+<header class="appbar">
+  <div class="appbar-side"></div>
+  <span class="appbar-title">Mizar</span>
+  <div class="appbar-side right">
+    <button class="icon-btn" id="starBtn" onclick="toggleStarCurrent()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="starIcon">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </button>
+    <button class="icon-btn" onclick="switchTab('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </button>
+    <button class="icon-btn" onclick="openHelp()" style="color:var(--accent)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+        <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<!-- ── CONVERTER SCREEN ───────────────────────────────── -->
+<div class="screen active" id="screen-converter">
+
+  <div class="cat-wrap">
+    <div class="cat-row" id="catRow"></div>
+  </div>
+
+  <div class="fav-bar" id="favBar">
+    <div class="fav-bar-label">
+      <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Favorites
+      <button class="fav-bar-edit" id="favEditBtn" onclick="toggleFavEdit()">Edit</button>
+    </div>
+    <div class="fav-chips" id="favChips"></div>
+  </div>
+
+  <div class="conv-body">
+
+    <!-- FROM CARD -->
+    <div class="conv-card" id="fromCard">
+      <div class="conv-lbl">From</div>
+      <div class="conv-row">
+        <input class="conv-number-input" id="fromInput"
+               type="number" inputmode="decimal" placeholder="0"
+               oninput="onInputChange()" autocomplete="off" autocorrect="off">
+        <button class="unit-btn" onclick="openPicker('from')" id="fromUnitBtn">
+          <span id="fromSymSpan">m</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+      </div>
+      <div class="conv-foot">
+        <span class="conv-unit-name" id="fromNameSpan">Meter (m)</span>
+        <span class="base-badge" id="fromBaseBadge" style="display:none">Base Unit</span>
+      </div>
+    </div>
+
+    <!-- SWAP -->
+    <div class="swap-row">
+      <button class="swap-btn" id="swapBtn" onclick="doSwap()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="17 1 21 5 17 9"/>
+          <path d="M3 11V9a4 4 0 014-4h14"/>
+          <polyline points="7 23 3 19 7 15"/>
+          <path d="M21 13v2a4 4 0 01-4 4H3"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- TO CARD -->
+    <div class="conv-card" id="toCard">
+      <div class="conv-lbl">To</div>
+      <div class="conv-row">
+        <div class="conv-result-val" id="toResult">0</div>
+        <button class="unit-btn" onclick="openPicker('to')" id="toUnitBtn">
+          <span id="toSymSpan">km</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+      </div>
+      <div class="conv-foot">
+        <span class="conv-unit-name" id="toNameSpan">Kilometer (km)</span>
+        <button class="copy-btn" onclick="copyResult()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CONVERT BUTTON -->
+    <button class="convert-btn" id="convertBtnEl" onclick="doConvert()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="23 4 23 10 17 10"/>
+        <polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+      </svg>
+      Convert
+    </button>
+
+    <!-- INFO CARD -->
+    <div class="info-card">
+      <div class="info-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <div class="info-texts">
+        <div class="info-ratio" id="infoRatio">1 m = 0.001 km</div>
+        <div class="info-sub">Exact conversion</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── HISTORY ─────────────────────────────────────────── -->
+<div class="screen" id="screen-history">
+  <div class="screen-hdr">
+    <h2>History</h2>
+    <button class="hdr-action" onclick="clearHistory()">Clear all</button>
+  </div>
+  <div id="histContent"></div>
+</div>
+
+<!-- ── COLLECTIONS ────────────────────────────────────── -->
+<div class="screen" id="screen-collections">
+  <div class="screen-hdr"><h2>Collections</h2></div>
+  <div class="coll-grid" id="collGrid"></div>
+</div>
+
+<!-- ── SETTINGS ──────────────────────────────────────── -->
+<div class="screen" id="screen-settings">
+  <div class="screen-hdr"><h2>Settings</h2></div>
+  <div class="settings-wrap">
+
+    <div class="s-label">Appearance</div>
+    <div class="s-group">
+      <div class="s-row">
+        <div class="s-row-left"><h4>Dark Mode</h4><p>Toggle dark / light theme</p></div>
+        <button class="toggle" id="themeToggle" onclick="toggleTheme()"></button>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left"><h4>Decimal Places</h4></div>
+        <select class="s-select" id="decSel" onchange="setDecimals(+this.value)">
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="6" selected>6</option>
+          <option value="10">Full</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="s-label">Behavior</div>
+    <div class="s-group">
+      <div class="s-row">
+        <div class="s-row-left"><h4>Show Convert Button</h4><p>If off, converts while you type</p></div>
+        <button class="toggle" id="showConvertBtnToggle" onclick="toggleShowConvertBtn()"></button>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left"><h4>Auto-Copy Result</h4><p>Copy to clipboard after conversion</p></div>
+        <button class="toggle" id="autoCopyToggle" onclick="toggleAutoCopy()"></button>
+      </div>
+    </div>
+
+    <div class="s-label">About</div>
+    <div class="s-group">
+      <div class="s-row">
+        <div class="s-row-left"><h4>App Version</h4></div>
+        <span class="s-ver">Mizar v1.0.0</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── BOTTOM NAV ─────────────────────────────────────── -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-converter" onclick="switchTab('converter')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="4" y="2" width="16" height="20" rx="2"/>
+      <line x1="8" y1="7" x2="16" y2="7"/>
+      <line x1="8" y1="11" x2="16" y2="11"/>
+      <line x1="8" y1="15" x2="13" y2="15"/>
+    </svg>
+    Converter
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+    History
+  </button>
+  <button class="nav-btn" id="nav-collections" onclick="switchTab('collections')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+      <polyline points="2 17 12 22 22 17"/>
+      <polyline points="2 12 12 17 22 12"/>
+    </svg>
+    Collections
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="switchTab('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+    </svg>
+    Settings
+  </button>
+</nav>
+
+<!-- ── UNIT PICKER SHEET ───────────────────────────────── -->
+<div class="overlay" id="pickerOverlay" onclick="overlayClick(event,'pickerOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header" id="pickerHeader">Select Unit</div>
+    <div class="sheet-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input id="pickerSearch" type="search" placeholder="Search…" oninput="filterPicker(this.value)" autocomplete="off">
+    </div>
+    <div class="sheet-list" id="pickerList"></div>
+  </div>
+</div>
+
+<!-- ── COLLECTION DETAIL ──────────────────────────────── -->
+<div class="overlay" id="collOverlay" onclick="overlayClick(event,'collOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header" id="collSheetTitle">Collection</div>
+    <div class="sheet-list" id="collSheetList"></div>
+  </div>
+</div>
+
+<!-- ── TOAST ──────────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+</div><!-- /app -->
+
+<!-- ── HELP OVERLAY — outside app ─────────────────────── -->
+<div id="helpOverlay" onclick="helpOverlayClick(event)">
+  <div class="help-sheet">
+    <div class="sheet-handle"></div>
+    <div class="help-hdr">
+      <div class="help-hdr-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="help-hdr-text">
+        <h2>Mizar Guide</h2>
+        <p>Learn what every tool and screen does</p>
+      </div>
+      <button class="help-close" onclick="closeHelp()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="help-divider"></div>
+    <div class="help-body">
+
+      <div class="help-sec">Main Screens</div>
+      <div class="help-item">
+        <div class="hi-icon" style="background:rgba(0,122,255,.14)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg></div>
+        <div class="hi-txt"><h4>Converter</h4><p>The main screen. Type a value, pick your From and To units, then tap <strong>Convert</strong> — or enable auto-convert in Settings to calculate as you type.</p></div>
+      </div>
+      <div class="help-item">
+        <div class="hi-icon" style="background:rgba(52,199,89,.13)"><svg viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="hi-txt"><h4>History</h4><p>Your last 50 conversions. Tap any entry to jump back to it. Use <strong>Clear all</strong> to wipe the log.</p></div>
+      </div>
+      <div class="help-item">
+        <div class="hi-icon" style="background:rgba(255,149,0,.13)"><svg viewBox="0 0 24 24" fill="none" stroke="#FF9500" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+        <div class="hi-txt"><h4>Collections</h4><p>Ready-made sets grouped by topic: <strong>Cooking</strong>, <strong>Travel</strong>, <strong>Science</strong>, <strong>Everyday</strong>. Tap a pair to open it in the Converter.</p></div>
+      </div>
+      <div class="help-item">
+        <div class="hi-icon" style="background:rgba(142,142,147,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--sub)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+        <div class="hi-txt"><h4>Settings</h4><p>Toggle <strong>Dark/Light</strong> theme, set <strong>Decimal Places</strong>, show/hide Convert button, enable <strong>Auto-Copy</strong>.</p></div>
+      </div>
+
+      <div class="help-sec">Converter Tools</div>
+      <div class="help-item">
+        <div class="hi-icon" style="background:rgba(0,122,255,.14)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="13" y2="18"/></svg></div>
+        <div class="hi-txt"><h4>Category Bar</h4><p>Swipe the card bar at the top to browse 10 categories. Tap a card to switch.</p></div>
+      </div>
+      <div class="help-item">
+        <div class="hi-icon" style="background:rgba(0,122,255,.14)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        <div class="hi-txt"><h4>Unit Picker</h4><p>Tap the unit button (e.g. <strong>km</strong>) to open a searchable list. Type to filter, tap to select.</p></div>
+      </div>
+      <div class="help-item">
+        <div class="hi-icon" style="background:rgba(0,122,255,.14)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></div>
+        <div class="hi-txt"><h4>Swap Button</h4><p>Swaps From and To units and moves the result into the input field.</p></div>
+      </div>
+      <div class="help-item">
+        <div class="hi-icon" style="background:rgba(255,214,10,.13)"><svg viewBox="0 0 24 24" fill="none" stroke="#FFD60A" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <div class="hi-txt"><h4>Star — Favorites</h4><p>Saves the unit pair as a favorite chip above the converter. Tap again to remove.</p></div>
+      </div>
+      <div class="help-item">
+        <div class="hi-icon" style="background:rgba(52,199,89,.13)"><svg viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+        <div class="hi-txt"><h4>Copy Result</h4><p>Copies the result to clipboard. Enable <strong>Auto-Copy</strong> in Settings for automatic copying.</p></div>
+      </div>
+      <div class="help-item">
+        <div class="hi-icon" style="background:rgba(142,142,147,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--sub)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div class="hi-txt"><h4>Base Ratio Card</h4><p>Shows the exact factor — e.g. <strong>1 km = 1000 m</strong>. Updates live.</p></div>
+      </div>
+
+      <div class="help-sec">Available Categories</div>
+      <div class="help-cats">
+        <div class="help-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="8" x2="3" y2="16"/><line x1="21" y1="8" x2="21" y2="16"/></svg><div class="help-cat-names"><span class="help-cat-fa">Length</span><span class="help-cat-en">m, km, ft, mi…</span></div></div>
+        <div class="help-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M2 20l2.5-7h15L22 20H2z"/></svg><div class="help-cat-names"><span class="help-cat-fa">Weight</span><span class="help-cat-en">kg, lbs, oz…</span></div></div>
+        <div class="help-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg><div class="help-cat-names"><span class="help-cat-fa">Temp</span><span class="help-cat-en">°C, °F, K…</span></div></div>
+        <div class="help-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h14l2 7H3L5 3z"/><path d="M3 10v11h18V10"/></svg><div class="help-cat-names"><span class="help-cat-fa">Volume</span><span class="help-cat-en">L, gal, cup…</span></div></div>
+        <div class="help-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/></svg><div class="help-cat-names"><span class="help-cat-fa">Area</span><span class="help-cat-en">m², ha, ac…</span></div></div>
+        <div class="help-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><div class="help-cat-names"><span class="help-cat-fa">Speed</span><span class="help-cat-en">km/h, mph…</span></div></div>
+        <div class="help-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><div class="help-cat-names"><span class="help-cat-fa">Time</span><span class="help-cat-en">s, min, h, d…</span></div></div>
+        <div class="help-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg><div class="help-cat-names"><span class="help-cat-fa">Pressure</span><span class="help-cat-en">Pa, bar, psi…</span></div></div>
+        <div class="help-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="help-cat-names"><span class="help-cat-fa">Energy</span><span class="help-cat-en">J, kcal, kWh…</span></div></div>
+        <div class="help-cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><div class="help-cat-names"><span class="help-cat-fa">Data</span><span class="help-cat-en">B, KB, MB, GB…</span></div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const CATS = [
+  { id:'length', name:'Length',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="8" x2="3" y2="16"/><line x1="21" y1="8" x2="21" y2="16"/><line x1="9" y1="10" x2="9" y2="14"/><line x1="15" y1="10" x2="15" y2="14"/></svg>`,
+    units:[
+      {n:'Meter',s:'m',f:1,base:true},{n:'Kilometer',s:'km',f:1000},
+      {n:'Centimeter',s:'cm',f:0.01},{n:'Millimeter',s:'mm',f:0.001},
+      {n:'Mile',s:'mi',f:1609.344},{n:'Foot',s:'ft',f:0.3048},
+      {n:'Inch',s:'in',f:0.0254},{n:'Yard',s:'yd',f:0.9144},
+      {n:'Nanometer',s:'nm',f:1e-9},{n:'Nautical Mile',s:'nmi',f:1852},
+    ]},
+  { id:'weight', name:'Weight',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M2 20l2.5-7h15L22 20H2z"/></svg>`,
+    units:[
+      {n:'Kilogram',s:'kg',f:1,base:true},{n:'Gram',s:'g',f:0.001},
+      {n:'Pound',s:'lbs',f:0.453592},{n:'Ounce',s:'oz',f:0.0283495},
+      {n:'Metric Ton',s:'t',f:1000},{n:'Milligram',s:'mg',f:1e-6},
+      {n:'Stone',s:'st',f:6.35029},{n:'US Ton',s:'ton',f:907.185},
+    ]},
+  { id:'temperature', name:'Temp',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>`,
+    units:[
+      {n:'Celsius',s:'°C',f:1,base:true},{n:'Fahrenheit',s:'°F',f:1},
+      {n:'Kelvin',s:'K',f:1},{n:'Rankine',s:'°R',f:1},
+    ]},
+  { id:'volume', name:'Volume',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h14l2 7H3L5 3z"/><path d="M3 10v11h18V10"/><line x1="12" y1="10" x2="12" y2="21"/></svg>`,
+    units:[
+      {n:'Liter',s:'L',f:1,base:true},{n:'Milliliter',s:'mL',f:0.001},
+      {n:'US Gallon',s:'gal',f:3.78541},{n:'Cup',s:'cup',f:0.24},
+      {n:'Tablespoon',s:'tbsp',f:0.0147868},{n:'Teaspoon',s:'tsp',f:0.00492892},
+      {n:'Fluid Ounce',s:'fl oz',f:0.0295735},{n:'Pint',s:'pt',f:0.473176},
+      {n:'Quart',s:'qt',f:0.946353},{n:'Cubic Meter',s:'m³',f:1000},
+    ]},
+  { id:'area', name:'Area',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/></svg>`,
+    units:[
+      {n:'Square Meter',s:'m²',f:1,base:true},{n:'Square Kilometer',s:'km²',f:1e6},
+      {n:'Hectare',s:'ha',f:10000},{n:'Square Foot',s:'ft²',f:0.092903},
+      {n:'Square Inch',s:'in²',f:0.00064516},{n:'Acre',s:'ac',f:4046.86},
+      {n:'Square Mile',s:'mi²',f:2.59e6},{n:'Square Centimeter',s:'cm²',f:0.0001},
+    ]},
+  { id:'speed', name:'Speed',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>`,
+    units:[
+      {n:'Meter/Second',s:'m/s',f:1,base:true},{n:'Kilometer/Hour',s:'km/h',f:0.277778},
+      {n:'Mile/Hour',s:'mph',f:0.44704},{n:'Knot',s:'kn',f:0.514444},
+      {n:'Mach',s:'Ma',f:340.29},
+    ]},
+  { id:'time', name:'Time',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    units:[
+      {n:'Second',s:'s',f:1,base:true},{n:'Millisecond',s:'ms',f:0.001},
+      {n:'Minute',s:'min',f:60},{n:'Hour',s:'h',f:3600},
+      {n:'Day',s:'d',f:86400},{n:'Week',s:'wk',f:604800},
+      {n:'Month',s:'mo',f:2629800},{n:'Year',s:'yr',f:31557600},
+    ]},
+  { id:'pressure', name:'Pressure',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>`,
+    units:[
+      {n:'Pascal',s:'Pa',f:1,base:true},{n:'Bar',s:'bar',f:100000},
+      {n:'Atmosphere',s:'atm',f:101325},{n:'PSI',s:'psi',f:6894.76},
+      {n:'mmHg',s:'mmHg',f:133.322},{n:'Hectopascal',s:'hPa',f:100},
+    ]},
+  { id:'energy', name:'Energy',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+    units:[
+      {n:'Joule',s:'J',f:1,base:true},{n:'Kilocalorie',s:'kcal',f:4184},
+      {n:'Kilowatt-Hour',s:'kWh',f:3600000},{n:'BTU',s:'BTU',f:1055.06},
+      {n:'Electron Volt',s:'eV',f:1.60218e-19},
+    ]},
+  { id:'data', name:'Data',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
+    units:[
+      {n:'Bit',s:'bit',f:0.125},{n:'Byte',s:'B',f:1,base:true},
+      {n:'Kilobyte',s:'KB',f:1024},{n:'Megabyte',s:'MB',f:1048576},
+      {n:'Gigabyte',s:'GB',f:1073741824},{n:'Terabyte',s:'TB',f:1099511627776},
+    ]},
+];
+
+const COLLECTIONS = [
+  { id:'cooking', title:'Cooking', sub:'Volume & Weight for recipes',
+    color:'#FF9500', bg:'rgba(255,149,0,0.13)',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="#FF9500" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg>`,
+    pairs:[
+      {catId:'volume',from:'cup',to:'mL',label:'Cup → Milliliter'},
+      {catId:'volume',from:'tbsp',to:'tsp',label:'Tablespoon → Teaspoon'},
+      {catId:'volume',from:'gal',to:'L',label:'Gallon → Liter'},
+      {catId:'volume',from:'fl oz',to:'mL',label:'Fluid Oz → Milliliter'},
+      {catId:'weight',from:'lbs',to:'g',label:'Pound → Gram'},
+      {catId:'weight',from:'oz',to:'g',label:'Ounce → Gram'},
+      {catId:'weight',from:'kg',to:'lbs',label:'Kilogram → Pound'},
+    ]},
+  { id:'travel', title:'Travel', sub:'Distance, Speed & Temperature',
+    color:'#007AFF', bg:'rgba(0,122,255,0.13)',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>`,
+    pairs:[
+      {catId:'length',from:'mi',to:'km',label:'Mile → Kilometer'},
+      {catId:'length',from:'km',to:'mi',label:'Kilometer → Mile'},
+      {catId:'length',from:'ft',to:'m',label:'Foot → Meter'},
+      {catId:'speed',from:'mph',to:'km/h',label:'MPH → km/h'},
+      {catId:'speed',from:'km/h',to:'mph',label:'km/h → MPH'},
+      {catId:'temperature',from:'°F',to:'°C',label:'Fahrenheit → Celsius'},
+      {catId:'temperature',from:'°C',to:'°F',label:'Celsius → Fahrenheit'},
+    ]},
+  { id:'science', title:'Science', sub:'Pressure, Energy & Temperature',
+    color:'#AF52DE', bg:'rgba(175,82,222,0.13)',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="#AF52DE" stroke-width="2"><path d="M9 3v9l-3 9h12l-3-9V3"/><line x1="6" y1="3" x2="18" y2="3"/></svg>`,
+    pairs:[
+      {catId:'pressure',from:'atm',to:'Pa',label:'Atmosphere → Pascal'},
+      {catId:'pressure',from:'psi',to:'bar',label:'PSI → Bar'},
+      {catId:'energy',from:'kcal',to:'J',label:'Kilocalorie → Joule'},
+      {catId:'energy',from:'kWh',to:'J',label:'kWh → Joule'},
+      {catId:'temperature',from:'K',to:'°C',label:'Kelvin → Celsius'},
+      {catId:'temperature',from:'°C',to:'K',label:'Celsius → Kelvin'},
+    ]},
+  { id:'everyday', title:'Everyday', sub:'Common daily conversions',
+    color:'#34C759', bg:'rgba(52,199,89,0.13)',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+    pairs:[
+      {catId:'weight',from:'kg',to:'lbs',label:'Kilogram → Pound'},
+      {catId:'weight',from:'lbs',to:'kg',label:'Pound → Kilogram'},
+      {catId:'length',from:'m',to:'ft',label:'Meter → Foot'},
+      {catId:'length',from:'cm',to:'in',label:'Centimeter → Inch'},
+      {catId:'volume',from:'L',to:'gal',label:'Liter → Gallon'},
+      {catId:'temperature',from:'°C',to:'°F',label:'Celsius → Fahrenheit'},
+      {catId:'time',from:'h',to:'min',label:'Hour → Minute'},
+      {catId:'data',from:'GB',to:'MB',label:'Gigabyte → Megabyte'},
+    ]},
+];
+
+// ── STATE ─────────────────────────────────────────────
+let S = {
+  catIdx:0, fromIdx:0, toIdx:1, fromVal:'',
+  isDark:true, decimals:6, autoCopy:false, showConvertBtn:false,
+  favorites:[], history:[], favEditMode:false,
+};
+function persist() { try { localStorage.setItem('mizar-ios', JSON.stringify(S)); } catch(e){} }
+function restore() {
+  try {
+    const d = JSON.parse(localStorage.getItem('mizar-ios')||'{}');
+    S.isDark=d.isDark??true; S.decimals=d.decimals??6;
+    S.autoCopy=d.autoCopy??false; S.showConvertBtn=d.showConvertBtn??false;
+    S.catIdx=d.catIdx??0; S.fromIdx=d.fromIdx??0; S.toIdx=d.toIdx??1;
+    S.favorites=d.favorites??[]; S.history=(d.history??[]).slice(0,50);
+  } catch(e){}
+}
+
+// ── HELPERS ───────────────────────────────────────────
+const cat  = () => CATS[S.catIdx];
+const from = () => cat().units[S.fromIdx];
+const to   = () => cat().units[S.toIdx];
+
+function convertTemp(v,fS,tS) {
+  if(fS===tS)return v;
+  let c;
+  switch(fS){case'°C':c=v;break;case'°F':c=(v-32)*5/9;break;case'K':c=v-273.15;break;case'°R':c=v*5/9-273.15;break;default:c=v;}
+  switch(tS){case'°C':return c;case'°F':return c*9/5+32;case'K':return c+273.15;case'°R':return(c+273.15)*9/5;default:return c;}
+}
+function doMath(v,catId,fF,tF,fS,tS) {
+  if(catId==='temperature')return convertTemp(v,fS,tS);
+  return tF===0?0:(v*fF)/tF;
+}
+function fmt(v,dec) {
+  if(!isFinite(v))return'0';
+  if(v===0)return'0';
+  const a=Math.abs(v);
+  if(a>=1e10||(a<1e-6&&a>0))return v.toExponential(4);
+  return parseFloat(v.toFixed(dec===10?10:dec)).toString();
+}
+
+// ── CONVERSION ────────────────────────────────────────
+function onInputChange() {
+  S.fromVal = document.getElementById('fromInput').value;
+  if(!S.showConvertBtn) runConvert();
+  persist();
+}
+function doConvert() { runConvert(); persist(); }
+function runConvert() {
+  const v=parseFloat(S.fromVal)||0;
+  const c=cat(),f=from(),t=to();
+  const r=doMath(v,c.id,f.f,t.f,f.s,t.s);
+  document.getElementById('toResult').textContent=fmt(r,S.decimals);
+  document.getElementById('infoRatio').textContent=
+    `1 ${f.s} = ${fmt(doMath(1,c.id,f.f,t.f,f.s,t.s),6)} ${t.s}`;
+  if(S.autoCopy&&v!==0)
+    navigator.clipboard&&navigator.clipboard.writeText(fmt(r,S.decimals)).catch(()=>{});
+  if(v!==0)pushHistory(c,f,t,v,r);
+  updateStarBtn();
+}
+function doSwap() {
+  const btn=document.getElementById('swapBtn');
+  btn.classList.add('spinning');
+  setTimeout(()=>btn.classList.remove('spinning'),350);
+  const cur=document.getElementById('toResult').textContent;
+  [S.fromIdx,S.toIdx]=[S.toIdx,S.fromIdx];
+  S.fromVal=cur;
+  document.getElementById('fromInput').value=cur;
+  refreshUnitsUI(); runConvert(); persist();
+}
+
+// ── CATEGORIES ────────────────────────────────────────
+function buildCatRow() {
+  document.getElementById('catRow').innerHTML=CATS.map((c,i)=>
+    `<button class="cat-card${i===S.catIdx?' active':''}" onclick="selectCat(${i})">
+      ${c.icon}<span>${c.name}</span>
+    </button>`
+  ).join('');
+}
+function selectCat(i) {
+  S.catIdx=i; S.fromIdx=0; S.toIdx=Math.min(1,CATS[i].units.length-1);
+  S.fromVal=''; document.getElementById('fromInput').value='';
+  buildCatRow(); refreshUnitsUI(); runConvert(); persist();
+}
+
+// ── UNITS UI ──────────────────────────────────────────
+function refreshUnitsUI() {
+  const f=from(),t=to();
+  document.getElementById('fromSymSpan').textContent=f.s;
+  document.getElementById('toSymSpan').textContent=t.s;
+  document.getElementById('fromNameSpan').textContent=`${f.n} (${f.s})`;
+  document.getElementById('toNameSpan').textContent=`${t.n} (${t.s})`;
+  document.getElementById('fromBaseBadge').style.display=f.base?'':'none';
+  document.getElementById('infoRatio').textContent=
+    `1 ${f.s} = ${fmt(doMath(1,cat().id,f.f,t.f,f.s,t.s),6)} ${t.s}`;
+}
+
+// ── PICKER ────────────────────────────────────────────
+let _pickerTarget='from';
+function openPicker(target) {
+  _pickerTarget=target;
+  document.getElementById('pickerHeader').textContent=target==='from'?'From Unit':'To Unit';
+  document.getElementById('pickerSearch').value='';
+  filterPicker('');
+  document.getElementById('pickerOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('pickerSearch').focus(),300);
+}
+function filterPicker(q) {
+  const units=cat().units;
+  const curIdx=_pickerTarget==='from'?S.fromIdx:S.toIdx;
+  const lq=q.toLowerCase();
+  const items=units.map((u,i)=>({u,i}))
+    .filter(({u})=>u.n.toLowerCase().includes(lq)||u.s.toLowerCase().includes(lq));
+  document.getElementById('pickerList').innerHTML=items.map(({u,i})=>{
+    const sel=i===curIdx;
+    return`<div class="sheet-item${sel?' sel':''}" onclick="pickUnit(${i})">
+      <span>${u.n}</span>
+      <div class="sheet-badge">${u.s}
+        ${sel?`<svg class="sheet-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function pickUnit(i) {
+  if(_pickerTarget==='from')S.fromIdx=i; else S.toIdx=i;
+  closePicker('pickerOverlay'); refreshUnitsUI(); runConvert(); persist();
+}
+
+// ── FAVORITES ─────────────────────────────────────────
+function updateStarBtn() {
+  const c=cat(),f=from(),t=to();
+  const has=S.favorites.some(x=>x.catId===c.id&&x.fromS===f.s&&x.toS===t.s);
+  document.getElementById('starBtn').classList.toggle('starred',has);
+  document.getElementById('starIcon').setAttribute('fill',has?'currentColor':'none');
+}
+function toggleStarCurrent() {
+  const c=cat(),f=from(),t=to();
+  const idx=S.favorites.findIndex(x=>x.catId===c.id&&x.fromS===f.s&&x.toS===t.s);
+  if(idx>=0){S.favorites.splice(idx,1);showToast('Removed from favorites');}
+  else{S.favorites.unshift({catId:c.id,catName:c.name,fromS:f.s,fromN:f.n,toS:t.s,toN:t.n});showToast('Added to favorites ★');}
+  updateStarBtn(); renderFavBar(); persist();
+}
+function renderFavBar() {
+  const bar=document.getElementById('favBar');
+  const chips=document.getElementById('favChips');
+  if(!S.favorites.length){bar.classList.remove('has-items');return;}
+  bar.classList.add('has-items');
+  const catMap={};CATS.forEach(c=>catMap[c.id]=c);
+  chips.innerHTML=S.favorites.map((fav,i)=>{
+    const c=catMap[fav.catId]||CATS[0];
+    return`<button class="fav-chip" onclick="loadFav(${i})">
+      <span class="fav-chip-icon">${c.icon}</span>
+      <span>${fav.fromS} → ${fav.toS}</span>
+      <span class="fav-chip-del" onclick="delFav(event,${i})">✕</span>
+    </button>`;
+  }).join('');
+}
+function loadFav(i) {
+  const fav=S.favorites[i];
+  const ci=CATS.findIndex(c=>c.id===fav.catId); if(ci<0)return;
+  S.catIdx=ci;
+  S.fromIdx=CATS[ci].units.findIndex(u=>u.s===fav.fromS); if(S.fromIdx<0)S.fromIdx=0;
+  S.toIdx=CATS[ci].units.findIndex(u=>u.s===fav.toS);   if(S.toIdx<0)S.toIdx=1;
+  S.fromVal=''; document.getElementById('fromInput').value='';
+  buildCatRow(); refreshUnitsUI(); runConvert();
+}
+function delFav(e,i){e.stopPropagation();S.favorites.splice(i,1);renderFavBar();updateStarBtn();persist();}
+function toggleFavEdit(){
+  S.favEditMode=!S.favEditMode;
+  document.getElementById('favBar').classList.toggle('edit-mode',S.favEditMode);
+  document.getElementById('favEditBtn').textContent=S.favEditMode?'Done':'Edit';
+}
+
+// ── HISTORY ───────────────────────────────────────────
+function pushHistory(c,f,t,fV,tV) {
+  S.history.unshift({catId:c.id,catName:c.name,fN:f.n,fS:f.s,tN:t.n,tS:t.s,fV,tV,ts:Date.now()});
+  if(S.history.length>50)S.history.pop();
+}
+function clearHistory(){S.history=[];renderHistory();persist();}
+function relTime(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return`${s}s ago`;
+  if(s<3600)return`${Math.floor(s/60)}m ago`;
+  if(s<86400)return`${Math.floor(s/3600)}h ago`;
+  return`${Math.floor(s/86400)}d ago`;
+}
+function renderHistory() {
+  const el=document.getElementById('histContent');
+  if(!S.history.length){
+    el.innerHTML=`<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <h3>No history yet</h3><p>Your conversions will appear here.</p>
+    </div>`;return;
+  }
+  const catMap={};CATS.forEach(c=>catMap[c.id]=c);
+  el.innerHTML=`<div class="list-wrap">${S.history.map((h,i)=>{
+    const c=catMap[h.catId]||CATS[0];
+    return`<div class="list-card" onclick="loadHistItem(${i})">
+      <div class="list-avatar" style="background:rgba(0,122,255,.12)">${c.icon}</div>
+      <div class="list-meta">
+        <div class="list-title">${fmt(h.fV,4)} ${h.fS} = ${fmt(h.tV,4)} ${h.tS}</div>
+        <div class="list-sub">${h.catName} · ${relTime(h.ts)}</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+function loadHistItem(i) {
+  const h=S.history[i];
+  const ci=CATS.findIndex(c=>c.id===h.catId); if(ci<0)return;
+  S.catIdx=ci;
+  S.fromIdx=CATS[ci].units.findIndex(u=>u.s===h.fS); if(S.fromIdx<0)S.fromIdx=0;
+  S.toIdx=CATS[ci].units.findIndex(u=>u.s===h.tS);   if(S.toIdx<0)S.toIdx=1;
+  S.fromVal=String(h.fV); document.getElementById('fromInput').value=h.fV;
+  switchTab('converter'); buildCatRow(); refreshUnitsUI(); runConvert();
+}
+
+// ── COLLECTIONS ───────────────────────────────────────
+function buildCollGrid() {
+  document.getElementById('collGrid').innerHTML=COLLECTIONS.map((col,ci)=>
+    `<div class="coll-card" onclick="openColl(${ci})">
+      <div class="coll-icon" style="background:${col.bg}">${col.icon}</div>
+      <h3>${col.title}</h3>
+      <p>${col.pairs.length} conversions</p>
+    </div>`
+  ).join('');
+}
+function openColl(ci) {
+  const col=COLLECTIONS[ci];
+  document.getElementById('collSheetTitle').textContent=col.title;
+  const catMap={};CATS.forEach(c=>catMap[c.id]=c);
+  document.getElementById('collSheetList').innerHTML=col.pairs.map((p,pi)=>{
+    const c=catMap[p.catId]||CATS[0];
+    const fU=c.units.find(u=>u.s===p.from)||c.units[0];
+    const tU=c.units.find(u=>u.s===p.to)||c.units[1];
+    const ratio=fmt(doMath(1,c.id,fU.f,tU.f,fU.s,tU.s),4);
+    return`<div class="coll-pair" onclick="launchPair(${ci},${pi})">
+      <div class="coll-pair-left">
+        <div style="color:${col.color}">${c.icon}</div>
+        <div>
+          <div class="coll-pair-text">${p.label}</div>
+          <div class="coll-pair-sub">1 ${p.from} = ${ratio} ${p.to}</div>
+        </div>
+      </div>
+      <span class="coll-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </div>`;
+  }).join('');
+  document.getElementById('collOverlay').classList.add('open');
+}
+function launchPair(ci,pi) {
+  closePicker('collOverlay');
+  const p=COLLECTIONS[ci].pairs[pi];
+  const catIdx=CATS.findIndex(c=>c.id===p.catId); if(catIdx<0)return;
+  S.catIdx=catIdx;
+  S.fromIdx=CATS[catIdx].units.findIndex(u=>u.s===p.from); if(S.fromIdx<0)S.fromIdx=0;
+  S.toIdx=CATS[catIdx].units.findIndex(u=>u.s===p.to);     if(S.toIdx<0)S.toIdx=1;
+  S.fromVal=''; document.getElementById('fromInput').value='';
+  switchTab('converter'); buildCatRow(); refreshUnitsUI(); runConvert();
+}
+
+// ── SETTINGS ──────────────────────────────────────────
+function toggleTheme(){S.isDark=!S.isDark;applyTheme();persist();}
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme',S.isDark?'dark':'light');
+  document.getElementById('themeToggle').classList.toggle('on',S.isDark);
+}
+function setDecimals(v){S.decimals=v;runConvert();persist();}
+function toggleAutoCopy(){S.autoCopy=!S.autoCopy;document.getElementById('autoCopyToggle').classList.toggle('on',S.autoCopy);persist();}
+function toggleShowConvertBtn(){
+  S.showConvertBtn=!S.showConvertBtn;
+  document.getElementById('showConvertBtnToggle').classList.toggle('on',S.showConvertBtn);
+  document.getElementById('convertBtnEl').style.display=S.showConvertBtn?'':'none';
+  persist();
+}
+
+// ── NAVIGATION ────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  const nb=document.getElementById('nav-'+name);
+  if(nb)nb.classList.add('active');
+  if(name==='history')renderHistory();
+  if(name==='collections')buildCollGrid();
+}
+
+// ── SHEETS ────────────────────────────────────────────
+function closePicker(id){document.getElementById(id).classList.remove('open');}
+function overlayClick(e,id){if(e.target.id===id)closePicker(id);}
+
+// ── HELP ──────────────────────────────────────────────
+function openHelp(){document.getElementById('helpOverlay').classList.add('open');}
+function closeHelp(){document.getElementById('helpOverlay').classList.remove('open');}
+function helpOverlayClick(e){if(e.target.id==='helpOverlay')closeHelp();}
+
+// ── COPY & TOAST ──────────────────────────────────────
+function copyResult() {
+  const txt=document.getElementById('toResult').textContent;
+  if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>showToast('Copied ✓'));}
+  else{const el=document.createElement('textarea');el.value=txt;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);showToast('Copied ✓');}
+}
+let _tt;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+// ── TOUCH DRAG FOR CAT ROW ────────────────────────────
+function makeDraggable(el) {
+  if(!el)return;
+  let active=false,startX=0,startScroll=0;
+  el.addEventListener('touchstart',e=>{active=true;startX=e.touches[0].pageX;startScroll=el.scrollLeft;},{passive:true});
+  el.addEventListener('touchmove',e=>{if(!active)return;el.scrollLeft=startScroll-(e.touches[0].pageX-startX);},{passive:true});
+  el.addEventListener('touchend',()=>{active=false;});
+}
+
+// ── INIT ──────────────────────────────────────────────
+function init() {
+  restore();
+  applyTheme();
+  document.getElementById('decSel').value=S.decimals;
+  document.getElementById('autoCopyToggle').classList.toggle('on',S.autoCopy);
+  document.getElementById('showConvertBtnToggle').classList.toggle('on',S.showConvertBtn);
+  document.getElementById('convertBtnEl').style.display=S.showConvertBtn?'':'none';
+  buildCatRow(); refreshUnitsUI(); renderFavBar(); updateStarBtn(); buildCollGrid();
+  makeDraggable(document.getElementById('catRow'));
+  makeDraggable(document.getElementById('favChips'));
+
+  // Auto-detect system dark mode
+  if(!localStorage.getItem('mizar-ios')) {
+    S.isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme();
+  }
+
+  // Register service worker
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
+}
+
+init();
+</script>
+</body>
+</html>
