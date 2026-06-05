@@ -11,5 +11,15 @@
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [
+    { "src": "1.jpg", "sizes": "690x1496", "type": "image/jpeg", "label": "Converter – Dark" },
+    { "src": "2.jpg", "sizes": "690x1496", "type": "image/jpeg", "label": "Favorites – Dark" },
+    { "src": "3.jpg", "sizes": "690x1496", "type": "image/jpeg", "label": "Convert Result – Dark" },
+    { "src": "4.jpg", "sizes": "690x1496", "type": "image/jpeg", "label": "History – Dark" },
+    { "src": "5.jpg", "sizes": "690x1496", "type": "image/jpeg", "label": "Collections – Dark" },
+    { "src": "8.jpg", "sizes": "690x1496", "type": "image/jpeg", "label": "Converter – Light" },
+    { "src": "9.jpg", "sizes": "690x1496", "type": "image/jpeg", "label": "History – Light" },
+    { "src": "11.jpg", "sizes": "690x1496", "type": "image/jpeg", "label": "Settings – Light" }
   ]
 }
